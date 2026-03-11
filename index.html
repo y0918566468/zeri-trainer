@@ -174,13 +174,37 @@
     function asyncSpeak(txt, lang) {
         var currentRate = document.getElementById('speed-slider').value;
         var engine = document.getElementById('engine-select').value;
+        
         if (engine === 'native') {
-            if (window.AndroidNative) { window.AndroidNative.speak(txt, lang, currentRate.toString()); }
-            else { window.speechSynthesis.cancel(); var m = new SpeechSynthesisUtterance(txt); m.lang = lang; m.rate = parseFloat(currentRate); window.speechSynthesis.speak(m); }
+            // 📱 模式一：內建語音 (最穩定)
+            window.speechSynthesis.cancel(); 
+            var m = new SpeechSynthesisUtterance(txt); 
+            m.lang = lang; 
+            m.rate = parseFloat(currentRate); 
+            window.speechSynthesis.speak(m); 
         } else {
+            // ☁️ 模式二：雲端語音 (Google TTS)
             var shortLang = lang.indexOf('ko') !== -1 ? 'ko' : 'ja';
+            // 使用更穩定的 client=tw-ob 參數
             var url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=' + shortLang + '&q=' + encodeURIComponent(txt);
-            var audio = new Audio(url); audio.playbackRate = parseFloat(currentRate); audio.play().catch(e => console.log(e));
+            
+            var audio = new Audio();
+            audio.src = url;
+            audio.playbackRate = parseFloat(currentRate);
+            
+            // 🌟 核心修正：捕捉播放承諾 (Promise)，避免被瀏覽器靜音
+            var playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(function(error) {
+                    console.log("Playback failed. Please click the page first:", error);
+                    // 如果雲端失敗，自動備援切換到內建語音發聲
+                    console.log("Falling back to native voice...");
+                    var fallback = new SpeechSynthesisUtterance(txt);
+                    fallback.lang = lang;
+                    fallback.rate = parseFloat(currentRate);
+                    window.speechSynthesis.speak(fallback);
+                });
+            }
         }
     }
 
@@ -284,4 +308,5 @@
     function updateSpeedDisplay(val) { document.getElementById('speed-display').innerText = parseFloat(val).toFixed(1) + 'x'; }
 </script>
 </body>
+
 </html>
