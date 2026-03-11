@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zeri Trainer</title>
+    <style>
+        body { font-family: sans-serif; background-color: #121212; color: #e0e0e0; padding: 10px; margin: 0; display: flex; flex-direction: column; align-items: center; overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
+        .container { width: 100%; max-width: 600px; background: #1e1e1e; padding: 15px; border-radius: 15px; box-sizing: border-box; }
+        .lang-switch-container { width: 100%; display: flex; justify-content: flex-end; margin-bottom: 10px; }
+        .lang-btn { background: #444; color: #fff; border: 1px solid #555; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
+        .main-nav { display: flex; gap: 8px; margin-bottom: 12px; }
+        .nav-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; background: #333; color: #aaa; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+        .nav-btn.active.kr-active { background: #1565c0; color: white; }
+        .nav-btn.active.jp-active { background: #e65100; color: white; }
+        input[type=range] { flex: 1; max-width: 200px; accent-color: #1976d2; cursor: pointer; }
+        .sub-nav { display: flex; gap: 5px; margin-bottom: 15px; background: #2a2a2a; padding: 5px; border-radius: 8px; overflow-x: auto; white-space: nowrap; }
+        .sub-btn { flex: 1; padding: 10px 12px; border: none; border-radius: 6px; font-size: 0.9rem; background: transparent; color: #aaa; cursor: pointer; }
+        .sub-btn.active { background: #3d3d3d; color: white; font-weight: bold; }
+        .section-title { color: #90caf9; border-left: 5px solid #90caf9; padding-left: 10px; margin: 20px 0 12px; font-weight: bold; font-size: 1.1rem; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        button.sound-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px 0; border: 1px solid #444; background: #252525; border-radius: 10px; cursor: pointer; }
+        button.sound-btn:active { background: #444; transform: scale(0.95); }
+        .main-char { font-size: 1.8rem; font-weight: bold; color: #fff; line-height: 1.2; pointer-events: none; }
+        .kana-pair { font-size: 1rem; color: #ccc; margin-top: 3px; pointer-events: none; }
+        .sub-info { font-size: 0.8rem; color: #aaa; margin-top: 3px; pointer-events: none; }
+        .page { display: none; }
+        .active-page { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="lang-switch-container">
+        <button class="lang-btn" onclick="toggleLanguage()" id="lang-toggle-btn">English / 中文</button>
+    </div>
+
+    <div class="main-nav">
+        <button id="btn-kr" class="nav-btn active kr-active" onclick="goKr()">Korean 40</button>
+        <button id="btn-jp" class="nav-btn" onclick="goJp()">Japanese 50+</button>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: center; margin: 15px 0;">
+        <span id="label-speed" style="font-size: 16px;">Speed: </span>
+        <span id="speed-display" style="font-size: 16px; width: 45px; display: inline-block; text-align: left; margin-left: 5px;">1.0x</span>
+        <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateSpeedDisplay(this.value)" style="margin-left: 10px;">
+    </div>
+
+    <div style="margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <label for="engine-select" id="label-engine" style="font-size: 16px;">Engine:</label>
+        <select id="engine-select" style="background-color: #2c2c2c; color: white; border: 1px solid #555; padding: 5px 10px; border-radius: 5px; font-size: 16px;">
+            <option value="cloud" id="opt-cloud">☁️ Cloud Voice</option>
+            <option value="native" id="opt-native">📱 Native Engine</option>
+        </select>
+    </div>
+
+    <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100px;">
+        <div style="display: flex; gap: 10px; width: 100%; justify-content: center; align-items: center;">
+            <button id="random-test-btn" onclick="startRandomTest()" style="background-color: #007AFF; color: white; border: none; padding: 12px 0; border-radius: 10px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); width: 200px;">
+                🎲 Random Quiz
+            </button>
+            <button id="re-listen-btn" onclick="reListen()" style="visibility: hidden; background-color: #444; color: white; border: none; padding: 12px 15px; border-radius: 10px; font-size: 16px; cursor: pointer;">
+                👂 Listen
+            </button>
+        </div>
+    </div>
+
+    <div id="p-kr" class="page active-page kr-btn-active">
+        <div class="section-title" id="t-kv1">Basic Vowels (10)</div>
+        <div id="kr-v1" class="grid"></div>
+        <div class="section-title" id="t-kv2">Compound Vowels (11)</div>
+        <div id="kr-v2" class="grid"></div>
+        <div class="section-title" id="t-kc1">Basic Consonants (14)</div>
+        <div id="kr-c1" class="grid"></div>
+        <div class="section-title" id="t-kc2">Double Consonants (5)</div>
+        <div id="kr-c2" class="grid"></div>
+    </div>
+
+    <div id="p-jp" class="page jp-btn-active">
+        <div class="sub-nav">
+            <button id="s-q" class="sub-btn active" onclick="setSub('q')">Seion</button>
+            <button id="s-z" class="sub-btn" onclick="setSub('z')">Dakuon</button>
+            <button id="s-a" class="sub-btn" onclick="setSub('a')">Youon</button>
+        </div>
+        <div id="box-jq" class="grid"></div>
+        <div id="box-jz" class="grid" style="display:none"></div>
+        <div id="box-ja" class="grid grid-3" style="display:none"></div>
+    </div>
+</div>
+
+<script>
+    var currentLang = 'en';
+    var isTesting = false;
+    var correctButton = null;
+
+    function toggleLanguage() {
+        currentLang = (currentLang === 'en') ? 'zh' : 'en';
+        updateUILanguage();
+    }
+
+    function updateUILanguage() {
+        const texts = {
+            en: {
+                btn_kr: "Korean 40", btn_jp: "Japanese 50+", label_speed: "Speed: ", label_engine: "Engine: ",
+                opt_cloud: "☁️ Cloud Voice", opt_native: "📱 Native Engine", quiz_start: "🎲 Random Quiz", quiz_relisten: "👂 Listen",
+                t_kv1: "Basic Vowels (10)", t_kv2: "Compound Vowels (11)", t_kc1: "Basic Consonants (14)", t_kc2: "Double Consonants (5)",
+                s_q: "Seion", s_z: "Dakuon", s_a: "Youon", quiz_correct: "🎉 Correct!", quiz_solving: "🚩 Solve It!", quiz_answer: "Answer: "
+            },
+            zh: {
+                btn_kr: "韓文 40 音", btn_jp: "日文 50 音+", label_speed: "語速：", label_engine: "引擎：",
+                opt_cloud: "☁️ 雲端語音", opt_native: "📱 內建語音", quiz_start: "🎲 隨機聽力測驗", quiz_relisten: "👂 再聽一次",
+                t_kv1: "基本母音 (10)", t_kv2: "複合母音 (11)", t_kc1: "基本子音 (14)", t_kc2: "複合子音 (5)",
+                s_q: "清音", s_z: "濁音/半濁", s_a: "拗音", quiz_correct: "🎉 答對了！", quiz_solving: "🚩 請答題", quiz_answer: "正解是："
+            }
+        };
+        const t = texts[currentLang];
+        document.getElementById('btn-kr').innerText = t.btn_kr;
+        document.getElementById('btn-jp').innerText = t.btn_jp;
+        document.getElementById('label-speed').innerText = t.label_speed;
+        document.getElementById('label-engine').innerText = t.label_engine;
+        document.getElementById('opt-cloud').innerText = t.opt_cloud;
+        document.getElementById('opt-native').innerText = t.opt_native;
+        if(!isTesting) document.getElementById('random-test-btn').innerText = t.quiz_start;
+        document.getElementById('re-listen-btn').innerText = t.quiz_relisten;
+        document.getElementById('t-kv1').innerText = t.t_kv1;
+        document.getElementById('t-kv2').innerText = t.t_kv2;
+        document.getElementById('t-kc1').innerText = t.t_kc1;
+        document.getElementById('t-kc2').innerText = t.t_kc2;
+        document.getElementById('s-q').innerText = t.s_q;
+        document.getElementById('s-z').innerText = t.s_z;
+        document.getElementById('s-a').innerText = t.s_a;
+    }
+
+    // --- Data Tables (Manually Verified) ---
+    var kr_v1 = [['ㅏ','a','ㄚ','아'],['ㅑ','ya','ㄧㄚ','야'],['ㅓ','eo','ㄛ','어'],['ㅕ','yeo','ㄧㄛ','여'],['ㅗ','o','ㄡ','오'],['ㅛ','yo','ㄧㄡ','요'],['ㅜ','u','ㄨ','우'],['ㅠ','yu','ㄧㄨ','유'],['ㅡ','eu','ㄜ','으'],['ㅣ','i','ㄧ','이']];
+    var kr_v2 = [['ㅐ','ae','ㄞ','애'],['ㅔ','e','ㄝ','에'],['ㅒ','yae','ㄧㄞ','얘'],['ㅖ','ye','ㄧㄝ','예'],['ㅘ','wa','ㄨㄚ','와'],['ㅙ','wae','ㄨㄞ','왜'],['ㅚ','oe','ㄨㄝ','외'],['ㅝ','wo','ㄨㄛ','워'],['ㅞ','we','ㄨㄝ','웨'],['ㅟ','wi','ㄨㄧ','위'],['ㅢ','eui','ㄜㄧ','의']];
+    var kr_c1 = [['ㄱ','g/k','ㄍ','그'],['ㄴ','n','ㄋ','느'],['ㄷ','d/t','ㄉ','드'],['ㄹ','r/l','ㄌ','르'],['ㅁ','m','ㄇ','므'],['ㅂ','b/p','ㄅ','브'],['ㅅ','s','ㄙ','스'],['ㅇ','ng','-','응'],['ㅈ','j','ㄐ','즈'],['ㅊ','ch','ㄔ','츠'],['ㅋ','k','ㄎ','크'],['ㅌ','t','ㄊ','트'],['ㅍ','p','ㄆ','프'],['ㅎ','h','ㄏ','흐']];
+    var kr_c2 = [['ㄲ','gg','ㄍ\'','끄'],['ㄸ','dd','ㄉ\'','뜨'],['ㅃ','bb','ㄅ\'','쁘'],['ㅆ','ss','ㄙ\'','쓰'],['ㅉ','jj','ㄗ\'','쯔']];
+
+    var jp_q = [
+        ['あ','ア','a','ㄚ'],['い','イ','i','ㄧ'],['う','ウ','u','ㄨ'],['え','エ','e','ㄝ'],['お','オ','o','ㄛ'],
+        ['か','カ','ka','ㄎㄚ'],['き','キ','ki','ㄎㄧ'],['く','ク','ku','ㄎㄨ'],['け','ケ','ke','ㄎㄝ'],['こ','コ','ko','ㄎㄛ'],
+        ['さ','サ','sa','ㄙㄚ'],['し','シ','shi','ㄒㄧ'],['す','ス','su','ㄙㄨ'],['せ','セ','se','ㄙㄝ'],['そ','ソ','so','ㄙㄛ'],
+        ['た','タ','ta','ㄊㄚ'],['ち','チ','chi','ㄑㄧ'],['つ','ツ','tsu','ㄘㄨ'],['て','テ','te','ㄊㄝ'],['と','ト','to','ㄊㄛ'],
+        ['な','ナ','na','ㄋㄚ'],['に','ニ','ni','ㄋㄧ'],['ぬ','ヌ','nu','ㄋㄨ'],['ね','ネ','ne','ㄋㄝ'],['の','ノ','no','ㄋㄛ'],
+        ['は','ハ','ha','ㄏㄚ'],['ひ','ヒ','hi','ㄏㄧ'],['ふ','フ','fu','ㄏㄨ'],['へ','ヘ','he','ㄏㄝ'],['ほ','ホ','ho','ㄏㄛ'],
+        ['ま','馬','ma','ㄇㄚ'],['み','ミ','mi','ㄇㄧ'],['む','ム','mu','ㄇㄨ'],['め','メ','me','ㄇㄝ'],['も','モ','mo','ㄇㄛ'],
+        ['や','ヤ','ya','ㄧㄚ'],[' ',' ',' ',' '],['ゆ','ユ','yu','ㄧㄨ'],[' ',' ',' ',' '],['よ','ヨ','yo','ㄧㄡ'],
+        ['ら','ラ','ra','ㄌㄚ'],['り','リ','ri','ㄌㄧ'],['る','ル','ru','ㄌㄨ'],['れ','レ','re','ㄌㄝ'],['ろ','ロ','ro','ㄌㄛ'],
+        ['わ','ワ','wa','ㄨㄚ'],[' ',' ',' ',' '],['を','ヲ','wo','ㄨㄛ'],[' ',' ',' ',' '],['ん','ン','n','ㄣ']
+    ];
+    var jp_z = [
+        ['が','ガ','ga','ㄍㄚ'],['ぎ','ギ','gi','ㄍㄧ'],['ぐ','グ','gu','ㄍㄨ'],['げ','ゲ','ge','ㄍㄝ'],['ご','ゴ','go','ㄍㄛ'],
+        ['ざ','ザ','za','ㄗㄚ'],['じ','ジ','ji','ㄐㄧ'],['ず','ズ','zu','ㄗㄨ'],['ぜ','ゼ','ze','ㄗㄝ'],['ぞ','ゾ','zo','ㄗㄛ'],
+        ['だ','ダ','da','ㄉㄚ'],['ぢ','ヂ','ji','ㄐㄧ'],['づ','ヅ','zu','ㄗㄨ'],['で','デ','de','ㄉㄝ'],['ど','ド','do','ㄉㄛ'],
+        ['ば','バ','ba','ㄅㄚ'],['び','ビ','bi','ㄅㄧ'],['ぶ','ブ','bu','ㄅㄨ'],['べ','ベ','be','ㄅㄝ'],['ぼ','ボ','bo','ㄅㄛ'],
+        ['ぱ','パ','pa','ㄆㄚ'],['ぴ','ピ','pi','ㄆㄧ'],['ぷ','プ','pu','ㄆㄨ'],['ぺ','ペ','pe','ㄆㄝ'],['ぽ','ポ','po','ㄆㄛ']
+    ];
+    var jp_a = [
+        ['きゃ','キャ','kya','ㄎㄧㄚ'],['きゅ','キュ','kyu','ㄎㄧㄨ'],['きょ','キョ','kyo','ㄎㄧㄛ'],
+        ['しゃ','シャ','sha','ㄒㄧㄚ'],['しゅ','シュ','shu','ㄒㄧㄨ'],['しょ','ショ','sho','ㄒㄧㄛ'],
+        ['ちゃ','チャ','cha','ㄑㄧㄚ'],['ちゅ','チュ','chu','ㄑㄧㄨ'],['ちょ','チョ','cho','ㄑㄧㄛ'],
+        ['にゃ','ニャ','nya','ㄋㄧㄚ'],['にゅ','ニュ','nyu','ㄋㄧㄨ'],['にょ','ニョ','nyo','ㄋㄧㄛ'],
+        ['ひゃ','ヒャ','hya','ㄏㄧㄚ'],['ひゅ','ヒュ','hyu','ㄏㄧㄨ'],['ひょ','ヒョ','hyo','ㄏㄧㄛ'],
+        ['みゃ','ミャ','mya','ㄇㄧㄚ'],['みゅ','ミュ','myu','ㄇㄧㄨ'],['みょ','ミョ','myo','ㄇㄧㄛ'],
+        ['りゃ','リャ','rya','ㄌㄧㄚ'],['りゅ','リュ','ryu','ㄌㄧㄨ'],['りょ','リョ','ryo','ㄌㄧㄛ'],
+        ['ぎゃ','ギャ','gya','ㄍㄧㄚ'],['ぎゅ','ギュ','gyu','ㄍㄧㄨ'],['ぎょ','ギョ','gyo','ㄍㄧㄛ'],
+        ['じゃ','ジャ','ja','ㄐㄧㄚ'],['じゅ','ジュ','ju','ㄐㄧㄨ'],['じょ','ジョ','jo','ㄐㄧㄛ'],
+        ['びゃ','ビャ','bya','ㄅㄧㄚ'],['びゅ','ビュ','byu','ㄅㄧㄨ'],['びょ','ビョ','byo','ㄅㄧㄛ'],
+        ['ぴゃ','ピャ','pya','ㄆㄧㄚ'],['ぴゅ','ピュ','pyu','ㄆㄧㄨ'],['ぴょ','ピョ','pyo','ㄆㄧㄛ']
+    ];
+
+    function asyncSpeak(txt, lang) {
+        var currentRate = document.getElementById('speed-slider').value;
+        var engine = document.getElementById('engine-select').value;
+        if (engine === 'native') {
+            if (window.AndroidNative) { window.AndroidNative.speak(txt, lang, currentRate.toString()); }
+            else { window.speechSynthesis.cancel(); var m = new SpeechSynthesisUtterance(txt); m.lang = lang; m.rate = parseFloat(currentRate); window.speechSynthesis.speak(m); }
+        } else {
+            var shortLang = lang.indexOf('ko') !== -1 ? 'ko' : 'ja';
+            var url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=' + shortLang + '&q=' + encodeURIComponent(txt);
+            var audio = new Audio(url); audio.playbackRate = parseFloat(currentRate); audio.play().catch(e => console.log(e));
+        }
+    }
+
+    function startRandomTest() {
+        var testBtn = document.getElementById('random-test-btn');
+        var reBtn = document.getElementById('re-listen-btn');
+        if (isTesting) {
+            const label = currentLang === 'en' ? "Answer: " : "正解是：";
+            testBtn.innerText = label + (correctButton.querySelector('.main-char').innerText);
+            testBtn.style.backgroundColor = "#4CAF50"; testBtn.style.color = "white";
+            correctButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            correctButton.style.backgroundColor = "#4CAF50";
+            setTimeout(resetTest, 2000); return;
+        }
+        var allButtons = Array.from(document.querySelectorAll('.sound-btn')).filter(btn => btn.style.visibility !== 'hidden' && btn.offsetParent !== null);
+        if (allButtons.length === 0) return;
+        isTesting = true; correctButton = allButtons[Math.floor(Math.random() * allButtons.length)];
+        reListen();
+        testBtn.innerText = currentLang === 'en' ? "🚩 Solve It!" : "🚩 請答題";
+        testBtn.style.backgroundColor = "#ffc0cb"; testBtn.style.color = "black";
+        reBtn.style.visibility = "visible";
+    }
+
+    document.body.addEventListener('click', function(e) {
+        var target = e.target;
+        while (target && target !== document.body) {
+            if (target.classList && target.classList.contains('sound-btn')) {
+                if (isTesting) {
+                    if (target === correctButton) {
+                        target.style.backgroundColor = "#4CAF50";
+                        var testBtn = document.getElementById('random-test-btn');
+                        testBtn.innerText = currentLang === 'en' ? "🎉 Correct!" : "🎉 答對了！";
+                        testBtn.style.backgroundColor = "#4CAF50"; testBtn.style.color = "white";
+                        reListen(); setTimeout(resetTest, 1500);
+                    } else {
+                        target.style.backgroundColor = "#F44336";
+                        setTimeout(() => { target.style.backgroundColor = "#252525"; }, 500);
+                    }
+                } else {
+                    var txt = target.getAttribute('data-txt');
+                    var lang = target.getAttribute('data-lang');
+                    if (txt && lang) asyncSpeak(txt, lang);
+                }
+                break;
+            }
+            target = target.parentNode;
+        }
+    });
+
+    function resetTest() {
+        isTesting = false; if (correctButton) correctButton.style.backgroundColor = "#252525";
+        correctButton = null; var testBtn = document.getElementById('random-test-btn'); var reBtn = document.getElementById('re-listen-btn');
+        testBtn.innerText = currentLang === 'en' ? "🎲 Random Quiz" : "🎲 隨機聽力測驗";
+        testBtn.style.backgroundColor = "#007AFF"; testBtn.style.color = "white";
+        reBtn.style.visibility = "hidden";
+    }
+
+    function reListen() {
+        if (correctButton) {
+            var txt = correctButton.getAttribute('data-txt');
+            var lang = correctButton.getAttribute('data-lang');
+            if (txt && lang) asyncSpeak(txt, lang);
+        }
+    }
+
+    function drawKR(boxId, data) {
+        var box = document.getElementById(boxId); var fragment = document.createDocumentFragment();
+        for (var i = 0; i < data.length; i++) {
+            var b = document.createElement('button'); b.className = 'sound-btn';
+            b.setAttribute('data-txt', data[i][3] ? data[i][3] : data[i][0]); b.setAttribute('data-lang', 'ko-KR');
+            b.innerHTML = '<span class="main-char">'+data[i][0]+'</span><span class="sub-info">'+data[i][1]+'</span><span class="sub-info">'+data[i][2]+'</span>';
+            fragment.appendChild(b);
+        }
+        box.appendChild(fragment);
+    }
+
+    function drawJP(boxId, data) {
+        var box = document.getElementById(boxId); var fragment = document.createDocumentFragment();
+        for (var i = 0; i < data.length; i++) {
+            var b = document.createElement('button'); b.className = 'sound-btn';
+            if (data[i][0] == ' ') { b.style.visibility = 'hidden'; } 
+            else { b.setAttribute('data-txt', data[i][0]); b.setAttribute('data-lang', 'ja-JP'); }
+            b.innerHTML = '<span class="main-char">'+data[i][0]+'</span><span class="kana-pair">'+data[i][1]+'</span><span class="sub-info">'+data[i][2]+' | '+data[i][3]+'</span>';
+            fragment.appendChild(b);
+        }
+        box.appendChild(fragment);
+    }
+
+    function goKr() { document.getElementById('p-kr').className = 'page active-page kr-btn-active'; document.getElementById('p-jp').className = 'page'; document.getElementById('btn-kr').className = 'nav-btn active kr-active'; document.getElementById('btn-jp').className = 'nav-btn'; }
+    function goJp() { document.getElementById('p-kr').className = 'page'; document.getElementById('p-jp').className = 'page active-page jp-btn-active'; document.getElementById('btn-kr').className = 'nav-btn'; document.getElementById('btn-jp').className = 'nav-btn active jp-active'; }
+    function setSub(s) {
+        document.getElementById('box-jq').style.display = (s=='q'?'grid':'none');
+        document.getElementById('box-jz').style.display = (s=='z'?'grid':'none');
+        document.getElementById('box-ja').style.display = (s=='a'?'grid':'none');
+        document.getElementById('s-q').className = 'sub-btn' + (s=='q'?' active':'');
+        document.getElementById('s-z').className = 'sub-btn' + (s=='z'?' active':'');
+        document.getElementById('s-a').className = 'sub-btn' + (s=='a'?' active':'');
+    }
+    drawKR('kr-v1', kr_v1); drawKR('kr-v2', kr_v2); drawKR('kr-c1', kr_c1); drawKR('kr-c2', kr_c2);
+    drawJP('box-jq', jp_q); drawJP('box-jz', jp_z); drawJP('box-ja', jp_a);
+    function updateSpeedDisplay(val) { document.getElementById('speed-display').innerText = parseFloat(val).toFixed(1) + 'x'; }
+</script>
+</body>
+</html>
