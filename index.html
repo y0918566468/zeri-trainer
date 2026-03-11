@@ -175,30 +175,29 @@
         var currentRate = document.getElementById('speed-slider').value;
         var engine = document.getElementById('engine-select').value;
         
-        if (engine === 'native') {
-            // 📱 模式一：內建語音 (最穩定)
-            window.speechSynthesis.cancel(); 
+        // 優先建議使用 Native Engine，因為它最穩定且不佔流量
+        if (engine === 'native' || !window.navigator.onLine) {
+            window.speechSynthesis.cancel(); // 先停止之前的聲音
             var m = new SpeechSynthesisUtterance(txt); 
             m.lang = lang; 
             m.rate = parseFloat(currentRate); 
+            
+            // 修正部分電腦（尤其是 Chrome）發音卡住的問題
+            m.onend = function(e) { window.speechSynthesis.cancel(); };
             window.speechSynthesis.speak(m); 
         } else {
-            // ☁️ 模式二：雲端語音 (Google TTS)
+            // ☁️ 雲端語音模式
             var shortLang = lang.indexOf('ko') !== -1 ? 'ko' : 'ja';
-            // 使用更穩定的 client=tw-ob 參數
             var url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=' + shortLang + '&q=' + encodeURIComponent(txt);
             
             var audio = new Audio();
             audio.src = url;
             audio.playbackRate = parseFloat(currentRate);
             
-            // 🌟 核心修正：捕捉播放承諾 (Promise)，避免被瀏覽器靜音
             var playPromise = audio.play();
             if (playPromise !== undefined) {
                 playPromise.catch(function(error) {
-                    console.log("Playback failed. Please click the page first:", error);
-                    // 如果雲端失敗，自動備援切換到內建語音發聲
-                    console.log("Falling back to native voice...");
+                    // 如果雲端被阻擋，立刻無縫切換到 Native 發音
                     var fallback = new SpeechSynthesisUtterance(txt);
                     fallback.lang = lang;
                     fallback.rate = parseFloat(currentRate);
@@ -310,3 +309,4 @@
 </body>
 
 </html>
+
